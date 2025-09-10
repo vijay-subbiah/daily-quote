@@ -1,0 +1,29 @@
+{
+    "brand": {
+        "organizationName": "Agilysys Technologies Pvt Ltd",
+        "website": "https://agilysys.com",
+        "email": "info@agilysys.com",
+        "mobile": "+91 9123456789",
+        "slogan": "designed with passion for innovation",
+        "colors": {
+            "primary": "#FFDF00",
+            "secondary": "#004040"
+        },
+        "logo": {
+            "title": "https://www.agilysys.com/en/wp-content/uploads/2022/11/Agilysys-Logo-v1.png",
+            "favicon": "https://www.agilysys.com/en/wp-content/uploads/2022/11/Agilysys-Logo-v1.png"
+        },
+        "chatbot": {
+            "avatar": "https://www.agilysys.com/en/wp-content/uploads/2022/11/Agilysys-Logo-v1.png",
+            "face": "https://www.agilysys.com/en/wp-content/uploads/2022/11/Agilysys-Logo-v1.png"
+        },
+        "socialMedia": {
+            "blog": "https://agilysys.com/blog",
+            "linkedin": "https://www.linkedin.com/company/agilysys/",
+            "instagram": "https://instagram.com/agilysys",
+            "github": "https://github.com/agilysys",
+            "x": "https://x.com/agilysys",
+            "youtube": "https://youtube.com/@agilysys"
+        }
+    }
+}
