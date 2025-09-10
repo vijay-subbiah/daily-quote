@@ -28,17 +28,22 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
+        cache-dependency-path: 'quote-app/package-lock.json'
         
     - name: Install dependencies
+      working-directory: ./quote-app
       run: npm ci
       
     - name: Run tests
+      working-directory: ./quote-app
       run: npm test -- --coverage --watchAll=false
       
     - name: Run linting
+      working-directory: ./quote-app
       run: npm run lint
       
     - name: Build application
+      working-directory: ./quote-app
       run: npm run build -- --configuration production --base-href "/daily-quote/"
       
     - name: Setup Pages
@@ -47,7 +52,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: './dist/quote-app/browser'
+        path: './quote-app/dist/quote-app/browser'
 
   deploy:
     environment:
