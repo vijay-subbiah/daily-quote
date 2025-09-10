@@ -48,6 +48,7 @@
     "@angular/cli": "^20.2.2",
     "@angular/compiler-cli": "^20.2.0",
     "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "1.55.0",
     "@tailwindcss/postcss": "^4.1.13",
     "@testing-library/angular": "^18.0.0",
     "@testing-library/jest-dom": "^6.8.0",
@@ -66,6 +67,7 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "msw": "^2.11.1",
     "playwright": "^1.55.0",
+    "playwright-ng-schematics": "^2.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
     "typescript": "~5.9.2"

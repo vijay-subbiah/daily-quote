@@ -104,6 +104,17 @@
               "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
             ]
           }
+        },
+        "e2e": {
+          "builder": "playwright-ng-schematics:playwright",
+          "options": {
+            "devServerTarget": "quote-app:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "quote-app:serve:production"
+            }
+          }
         }
       }
     }

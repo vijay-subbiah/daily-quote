@@ -110,13 +110,13 @@ import { Quote } from '../models/quote.interface';
 
                 <!-- Quote Display -->
                 @if (currentQuote()) {
-                  <div class="text-center">
+                  <div class="text-center" data-testid="quote-display">
                     <blockquote class="blockquote">
-                      <p class="fs-3 fw-light text-light mb-4">
+                      <p class="fs-3 fw-light text-light mb-4" data-testid="quote-text">
                         "{{ currentQuote()!.text }}"
                       </p>
                       <footer class="blockquote-footer">
-                        <cite class="fs-5 text-info">{{ currentQuote()!.author }}</cite>
+                        <cite class="fs-5 text-info" data-testid="quote-author">{{ currentQuote()!.author }}</cite>
                       </footer>
                     </blockquote>
                     
@@ -129,7 +129,7 @@ import { Quote } from '../models/quote.interface';
 
                 <!-- Loading State -->
                 @if (loading()) {
-                  <div class="text-center py-5">
+                  <div class="text-center py-5" data-testid="loading-spinner">
                     <div class="spinner-border text-primary mb-3" role="status">
                       <span class="visually-hidden">Loading...</span>
                     </div>
