@@ -54,13 +54,13 @@ export interface QuoteGardenResponse {
     totalPages: number;
   };
   totalQuotes: number;
-  data: Array<{
+  data: {
     _id: string;
     quoteText: string;
     quoteAuthor: string;
     quoteGenre: string;
     __v: number;
-  }>;
+  }[];
 }
 
 /**

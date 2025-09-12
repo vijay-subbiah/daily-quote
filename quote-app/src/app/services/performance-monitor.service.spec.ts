@@ -19,7 +19,8 @@ const mockPerformance = {
   }
 };
 
-// Mock Router events
+// Mock Router events for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockRouterEvents = {
   pipe: jest.fn(() => ({
     subscribe: jest.fn()
@@ -27,7 +28,7 @@ const mockRouterEvents = {
 };
 
 describe('PerformanceMonitorService Core Logic', () => {
-  let originalWindow: any;
+  let originalWindow: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   let originalPerformanceObserver: any;
 
   beforeEach(() => {

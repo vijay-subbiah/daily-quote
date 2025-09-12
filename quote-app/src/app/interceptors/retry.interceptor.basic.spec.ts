@@ -4,6 +4,8 @@
  * Basic validation that RetryInterceptor compiles and instantiates correctly
  */
 
+// Import exists for type validation - interceptor not directly instantiated in basic test
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { RetryInterceptor } from './retry.interceptor';
 
 describe('RetryInterceptor - Basic', () => {

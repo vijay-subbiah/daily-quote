@@ -4,6 +4,8 @@
  * Basic validation that RateLimitInterceptor compiles and instantiates correctly
  */
 
+// Import exists for type validation - interceptor not directly instantiated in basic test
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { RateLimitInterceptor } from './rate-limit.interceptor';
 
 describe('RateLimitInterceptor - Basic', () => {

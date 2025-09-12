@@ -30,11 +30,11 @@ export const RATE_LIMIT_CONFIG = new InjectionToken<RateLimitConfig>('rate-limit
 interface TokenBucket {
   tokens: number;
   lastRefill: number;
-  queue: Array<{
+  queue: {
     resolve: (value: boolean) => void;
     reject: (reason: any) => void;
     timestamp: number;
-  }>;
+  }[];
 }
 
 @Injectable()

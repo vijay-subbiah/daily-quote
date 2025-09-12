@@ -6,12 +6,14 @@ import { ErrorHandler } from './error-handler.service';
 
 describe('ErrorHandler Service - Basic', () => {
   let service: ErrorHandler;
-  let consoleErrorSpy: any;
+  let consoleErrorSpy: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   beforeEach(() => {
     service = new ErrorHandler();
     // Mock console.error to prevent test output pollution
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // Empty implementation to suppress console output
+    });
   });
 
   afterEach(() => {

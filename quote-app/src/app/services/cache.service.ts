@@ -17,7 +17,7 @@ export interface CacheStats {
   totalSize: number;
   oldestEntry: Date;
   newestEntry: Date;
-  categoryCounts: { [category: string]: number };
+  categoryCounts: Record<string, number>;
 }
 
 @Injectable({
@@ -269,7 +269,7 @@ export class CacheService {
     const totalSize = entries.reduce((sum, entry) => sum + this.calculateQuoteSize(entry.quote), 0);
     const sortedByDate = entries.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
     
-    const categoryCounts: { [category: string]: number } = {};
+    const categoryCounts: Record<string, number> = {};
     entries.forEach((entry: CacheEntry) => {
       const category = entry.quote.category || 'uncategorized';
       categoryCounts[category] = (categoryCounts[category] || 0) + 1;

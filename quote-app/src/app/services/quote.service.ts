@@ -25,13 +25,13 @@ interface QuoteGardenResponse {
     nextPage: number | null;
     totalPages: number;
   };
-  data: Array<{
+  data: {
     _id: string;
     quoteText: string;
     quoteAuthor: string;
     quoteGenre: string;
     __v: number;
-  }>;
+  }[];
 }
 
 interface QuotableResponse {
