@@ -12,6 +12,21 @@ import { CacheService } from './cache.service';
 import { Quote } from '../models/quote.interface';
 import { CacheEntry } from '../models/cache-entry.interface';
 
+// Helper function to create mock quotes for testing
+function createMockQuotes(count: number): Quote[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `q${i + 1}`,
+    text: `Test quote ${i + 1}`,
+    author: `Author ${i + 1}`,
+    source: 'test',
+    category: 'test',
+    tags: ['test'],
+    length: 20,
+    dateAdded: new Date(),
+    language: 'en'
+  }));
+}
+
 describe('CacheService', () => {
   let service: CacheService;
 
