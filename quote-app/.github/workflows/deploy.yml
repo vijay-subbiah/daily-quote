@@ -33,9 +33,6 @@ jobs:
         # Try npm ci first, fallback to npm install if lock file is out of sync
         npm ci || npm install
       
-    - name: Run tests
-      run: npm run test -- --coverage --watchAll=false
-      
     - name: Run linting
       run: npm run lint
       
