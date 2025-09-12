@@ -42,6 +42,9 @@ jobs:
     - name: Build application
       run: npm run build -- --configuration production --base-href "/daily-quote/"
       
+    - name: Add .nojekyll file to disable Jekyll processing
+      run: touch dist/quote-app/browser/.nojekyll
+      
     - name: Setup Pages
       uses: actions/configure-pages@v4
       

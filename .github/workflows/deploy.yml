@@ -3,8 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -31,21 +30,26 @@ jobs:
         cache-dependency-path: 'quote-app/package-lock.json'
         
     - name: Install dependencies
-      working-directory: ./quote-app
-      run: npm ci
+      working-directory: quote-app
+      run: |
+        # Try npm ci first, fallback to npm install if lock file is out of sync
+        npm ci || npm install
       
-    # Skip tests and linting for now to focus on deployment
-    # - name: Run tests
-    #   working-directory: ./quote-app
-    #   run: npm test -- --coverage --watchAll=false
+    - name: Run tests
+      working-directory: quote-app
+      run: npm run test -- --coverage --watchAll=false
       
-    # - name: Run linting
-    #   working-directory: ./quote-app
-    #   run: npm run lint
+    - name: Run linting
+      working-directory: quote-app
+      run: npm run lint
       
     - name: Build application
-      working-directory: ./quote-app
+      working-directory: quote-app
       run: npm run build -- --configuration production --base-href "/daily-quote/"
+      
+    - name: Add .nojekyll file to disable Jekyll processing
+      working-directory: quote-app
+      run: touch dist/quote-app/browser/.nojekyll
       
     - name: Setup Pages
       uses: actions/configure-pages@v4

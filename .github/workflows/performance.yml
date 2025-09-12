@@ -1,0 +1,164 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  performance-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'quote-app/package-lock.json'
+        
+    - name: Install dependencies
+      working-directory: quote-app
+      run: |
+        # Try npm ci first, fallback to npm install if lock file is out of sync
+        npm ci || npm install
+        npx playwright install --with-deps chromium
+        
+    - name: Lint code
+      working-directory: quote-app
+      run: npm run lint
+      
+    - name: Run unit tests
+      working-directory: quote-app
+      run: npm run test -- --coverage --watchAll=false
+      
+    - name: Build application for production
+      working-directory: quote-app
+      run: npm run build:prod
+      
+    - name: Generate bundle analysis
+      working-directory: quote-app
+      run: |
+        npm run build:analyze -- --output-path=dist/bundle-analysis
+        # Create bundle size report
+        echo "# Bundle Analysis Report" > bundle-report.md
+        echo "Generated on: $(date)" >> bundle-report.md
+        echo "" >> bundle-report.md
+        
+        # Get bundle sizes
+        if [ -f "dist/quote-app/stats.json" ]; then
+          echo "## Bundle Sizes" >> bundle-report.md
+          echo "\`\`\`" >> bundle-report.md
+          node -e "
+            const stats = require('./dist/quote-app/stats.json');
+            const assets = stats.assets || [];
+            console.log('File\t\t\t\tSize');
+            console.log('----\t\t\t\t----');
+            assets.forEach(asset => {
+              if (asset.name.endsWith('.js') || asset.name.endsWith('.css')) {
+                const sizeKB = Math.round(asset.size / 1024 * 100) / 100;
+                console.log(\`\${asset.name}\t\t\${sizeKB}KB\`);
+              }
+            });
+          " >> bundle-report.md
+          echo "\`\`\`" >> bundle-report.md
+        fi
+        
+    - name: Check bundle size limits
+      working-directory: quote-app
+      run: |
+        # Run bundlesize check
+        npm run bundlesize
+        
+        # Define bundle size limits (in KB)
+        MAX_MAIN_BUNDLE_SIZE=500
+        MAX_TOTAL_SIZE=1000
+        
+        if [ -f "dist/quote-app/stats.json" ]; then
+          node -e "
+            const stats = require('./dist/quote-app/stats.json');
+            const assets = stats.assets || [];
+            let mainBundleSize = 0;
+            let totalSize = 0;
+            
+            assets.forEach(asset => {
+              if (asset.name.includes('main') && asset.name.endsWith('.js')) {
+                mainBundleSize = Math.round(asset.size / 1024);
+              }
+              if (asset.name.endsWith('.js') || asset.name.endsWith('.css')) {
+                totalSize += Math.round(asset.size / 1024);
+              }
+            });
+            
+            console.log(\`Main bundle size: \${mainBundleSize}KB\`);
+            console.log(\`Total bundle size: \${totalSize}KB\`);
+            
+            if (mainBundleSize > $MAX_MAIN_BUNDLE_SIZE) {
+              console.error(\`❌ Main bundle size (\${mainBundleSize}KB) exceeds limit ($MAX_MAIN_BUNDLE_SIZE KB)\`);
+              process.exit(1);
+            }
+            
+            if (totalSize > $MAX_TOTAL_SIZE) {
+              console.error(\`❌ Total bundle size (\${totalSize}KB) exceeds limit ($MAX_TOTAL_SIZE KB)\`);
+              process.exit(1);
+            }
+            
+            console.log('✅ Bundle size checks passed');
+          "
+        fi
+        
+    - name: Start application server
+      working-directory: quote-app
+      run: |
+        npm start &
+        # Wait for server to start
+        npx wait-on http://localhost:4200 --timeout 60000
+      
+    - name: Run Lighthouse CI
+      working-directory: quote-app
+      uses: treosh/lighthouse-ci-action@v12
+      with:
+        configPath: ./.lighthouserc.json
+        temporaryPublicStorage: true
+        uploadArtifacts: true
+        budgetPath: ./lighthouse-budget.json
+        
+    - name: Run performance E2E tests
+      working-directory: quote-app
+      run: |
+        npm run e2e -- --grep="performance" --reporter=json --output-file=performance-results.json
+      continue-on-error: true
+      
+    - name: Upload performance artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-reports-${{ github.run_number }}
+        path: |
+          quote-app/bundle-report.md
+          quote-app/performance-results.json
+          quote-app/.lighthouseci/
+          quote-app/dist/bundle-analysis/
+        retention-days: 30
