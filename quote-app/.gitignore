@@ -7,6 +7,7 @@
 /bazel-out
 
 # Node
+node_modules/
 /node_modules
 npm-debug.log
 yarn-error.log
@@ -48,6 +49,14 @@ Thumbs.db
 /playwright-report/
 /playwright/.cache/
 /playwright/downloads/
+
+# Performance testing artifacts
+/lighthouse-report*
+/.lighthouseci/
+/bundle-report.md
+/performance-results.json
+/lighthouse-strict.json
+/dist/bundle-analysis/
 
 # Environment variables
 .env

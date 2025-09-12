@@ -1,0 +1,35 @@
+{
+  "preset": "jest-preset-angular",
+  "setupFilesAfterEnv": ["<rootDir>/setup-jest.ts"],
+  "globalSetup": "jest-preset-angular/global-setup",
+  "testEnvironment": "jsdom",
+  "transform": {
+    "^.+\\.(ts|js|html)$": [
+      "jest-preset-angular",
+      {
+        "tsconfig": "tsconfig.spec.json",
+        "stringifyContentPathRegex": "\\.html$"
+      }
+    ]
+  },
+  "transformIgnorePatterns": [
+    "node_modules/(?!.*\\.mjs$)"
+  ],
+  "collectCoverageFrom": [
+    "src/app/**/*.ts",
+    "!src/app/**/*.spec.ts",
+    "!src/app/**/*.module.ts",
+    "!src/main.ts"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "branches": 80,
+      "functions": 80,
+      "lines": 80,
+      "statements": 80
+    }
+  },
+  "testMatch": [
+    "<rootDir>/src/**/*.spec.ts"
+  ]
+}

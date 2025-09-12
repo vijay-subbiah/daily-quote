@@ -1,0 +1,265 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  performance-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: |
+        npm ci
+        npx playwright install --with-deps chromium
+        
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Run unit tests
+      run: npm run test -- --coverage --watchAll=false
+      
+    - name: Build application for production
+      run: npm run build:prod
+      
+    - name: Generate bundle analysis
+      run: |
+        npm run build:analyze -- --output-path=dist/bundle-analysis
+        # Create bundle size report
+        echo "# Bundle Analysis Report" > bundle-report.md
+        echo "Generated on: $(date)" >> bundle-report.md
+        echo "" >> bundle-report.md
+        
+        # Get bundle sizes
+        if [ -f "dist/quote-app/stats.json" ]; then
+          echo "## Bundle Sizes" >> bundle-report.md
+          echo "\`\`\`" >> bundle-report.md
+          node -e "
+            const stats = require('./dist/quote-app/stats.json');
+            const assets = stats.assets || [];
+            console.log('File\t\t\t\tSize');
+            console.log('----\t\t\t\t----');
+            assets.forEach(asset => {
+              if (asset.name.endsWith('.js') || asset.name.endsWith('.css')) {
+                const sizeKB = Math.round(asset.size / 1024 * 100) / 100;
+                console.log(\`\${asset.name}\t\t\${sizeKB}KB\`);
+              }
+            });
+          " >> bundle-report.md
+          echo "\`\`\`" >> bundle-report.md
+        fi
+        
+    - name: Check bundle size limits
+      run: |
+        # Run bundlesize check
+        npm run bundlesize
+        
+        # Define bundle size limits (in KB)
+        MAX_MAIN_BUNDLE_SIZE=500
+        MAX_TOTAL_SIZE=1000
+        
+        if [ -f "dist/quote-app/stats.json" ]; then
+          node -e "
+            const stats = require('./dist/quote-app/stats.json');
+            const assets = stats.assets || [];
+            let mainBundleSize = 0;
+            let totalSize = 0;
+            
+            assets.forEach(asset => {
+              if (asset.name.includes('main') && asset.name.endsWith('.js')) {
+                mainBundleSize = Math.round(asset.size / 1024);
+              }
+              if (asset.name.endsWith('.js') || asset.name.endsWith('.css')) {
+                totalSize += Math.round(asset.size / 1024);
+              }
+            });
+            
+            console.log(\`Main bundle size: \${mainBundleSize}KB\`);
+            console.log(\`Total bundle size: \${totalSize}KB\`);
+            
+            if (mainBundleSize > $MAX_MAIN_BUNDLE_SIZE) {
+              console.error(\`❌ Main bundle size (\${mainBundleSize}KB) exceeds limit ($MAX_MAIN_BUNDLE_SIZE KB)\`);
+              process.exit(1);
+            }
+            
+            if (totalSize > $MAX_TOTAL_SIZE) {
+              console.error(\`❌ Total bundle size (\${totalSize}KB) exceeds limit ($MAX_TOTAL_SIZE KB)\`);
+              process.exit(1);
+            }
+            
+            console.log('✅ Bundle size checks passed');
+          "
+        fi
+        
+    - name: Start application server
+      run: |
+        npm start &
+        # Wait for server to start
+        npx wait-on http://localhost:4200 --timeout 60000
+      
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v12
+      with:
+        configPath: ./.lighthouserc.json
+        temporaryPublicStorage: true
+        uploadArtifacts: true
+        budgetPath: ./lighthouse-budget.json
+        
+    - name: Run performance E2E tests
+      run: |
+        npm run e2e -- --grep="performance" --reporter=json --output-file=performance-results.json
+      continue-on-error: true
+      
+    - name: Upload performance artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-reports-${{ github.run_number }}
+        path: |
+          bundle-report.md
+          performance-results.json
+          .lighthouseci/
+          dist/bundle-analysis/
+        retention-days: 30
+        
+    - name: Comment PR with performance results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🚀 Performance Test Results\n\n';
+          
+          // Add bundle analysis if available
+          if (fs.existsSync('bundle-report.md')) {
+            const bundleReport = fs.readFileSync('bundle-report.md', 'utf8');
+            comment += bundleReport + '\n\n';
+          }
+          
+          // Add Lighthouse results link
+          comment += '### 📊 Lighthouse Report\n';
+          comment += 'Detailed Lighthouse performance report is available in the artifacts.\n\n';
+          
+          // Add timestamp
+          comment += `*Report generated at ${new Date().toISOString()}*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  lighthouse-budget-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: performance-analysis
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build for production
+      run: npm run build:prod
+      
+    - name: Start application
+      run: |
+        npx http-server dist/quote-app -p 8080 &
+        npx wait-on http://localhost:8080 --timeout 30000
+        
+    - name: Run Lighthouse with strict budgets
+      run: |
+        npx lighthouse http://localhost:8080 \
+          --budget-path=lighthouse-budget.json \
+          --output=json \
+          --output-path=lighthouse-strict.json \
+          --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+          --preset=desktop
+          
+    - name: Validate performance budgets
+      run: |
+        node -e "
+          const results = require('./lighthouse-strict.json');
+          const audits = results.audits;
+          
+          console.log('=== Performance Budget Validation ===');
+          
+          // Define strict thresholds
+          const thresholds = {
+            'first-contentful-paint': 1500,
+            'largest-contentful-paint': 2500,
+            'cumulative-layout-shift': 0.1,
+            'total-blocking-time': 300,
+            'speed-index': 3000
+          };
+          
+          let passed = true;
+          
+          for (const [metric, threshold] of Object.entries(thresholds)) {
+            if (audits[metric]) {
+              const value = audits[metric].numericValue;
+              const pass = value <= threshold;
+              
+              console.log(\`\${metric}: \${value} (\${pass ? '✅' : '❌'} threshold: \${threshold})\`);
+              
+              if (!pass) {
+                passed = false;
+              }
+            }
+          }
+          
+          if (!passed) {
+            console.error('❌ Performance budget validation failed');
+            process.exit(1);
+          }
+          
+          console.log('✅ All performance budgets passed');
+        "
+        
+    - name: Upload Lighthouse results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lighthouse-budget-results-${{ github.run_number }}
+        path: lighthouse-strict.json
+        retention-days: 30
