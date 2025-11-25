@@ -1,0 +1,1 @@
+fix the issue in this file in daily-quote
