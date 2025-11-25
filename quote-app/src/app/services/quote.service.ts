@@ -51,7 +51,6 @@ interface ZenQuotesResponse {
 interface DummyJSONResponse {
   id: number;
   quote: string;
-  author: string;
 }
 
 @Injectable({
